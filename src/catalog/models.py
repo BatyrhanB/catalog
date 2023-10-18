@@ -49,6 +49,7 @@ class Book(BaseModel):
 
 
 class Review(BaseModel):
+    user = models.ForeignKey("user.User", on_delete=models.CASCADE, null=False, blank=False, related_name="reviews")
     book = models.ForeignKey("catalog.Book", on_delete=models.CASCADE, null=False, blank=False, related_name="reviews")
     review = models.TextField(null=True, blank=True, verbose_name=_("Отзыв"))
     rating = models.IntegerField(
