@@ -3,6 +3,7 @@ from typing import Type
 from django.db import models
 
 from catalog.models import Book
+from user.models import User
 
 
 class BookServices(object):
@@ -28,3 +29,13 @@ class BookServices(object):
         :return: float
         """
         return book_instance.reviews.aggregate(average_rating=models.Avg("rating"))["average_rating"] or 0.0
+
+    @staticmethod
+    def is_favorite(user: Type[User], book_instance: Type[Book]) -> bool:
+        """
+        Check if book is favorite for user
+        :param user: User instance
+        :param book_instance: Book instance
+        :return: bool
+        """
+        return book_instance.favorites.filter(user=user).exists()
