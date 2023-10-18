@@ -7,12 +7,12 @@ from user.models import User
 
 
 class SignUpAPIView(generics.GenericAPIView):
-    serializer_class = SignUpSerializer
-    permission_classes = (permissions.AllowAny,)
-
     """
     API for signing up
     """
+
+    serializer_class = SignUpSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
@@ -27,11 +27,14 @@ class SignUpAPIView(generics.GenericAPIView):
 
 
 class UserVerificationAPIView(generics.GenericAPIView):
+    """
+    API for verifying user
+    """
+
     queryset = User.objects.filter(is_deleted=False)
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request: HttpRequest, *args, **kwargs):
-
         token = request.GET.get("token")
         token = AuthService.verify_email_user(token)
         return response.Response(

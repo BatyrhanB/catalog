@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from user.models import User
+from user.models import User, Favorite
 
 
 @admin.register(User)
@@ -67,6 +67,28 @@ class UserAdmin(UserAdmin, admin.ModelAdmin):
                     "password1",
                     "password2",
                 ),
+            },
+        ),
+    )
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ("user", "book", "created_at")
+    list_display_links = ("user", "book")
+    list_filter = ("user", "book", "created_at")
+    readonly_fields = ("created_at",)
+    search_fields = ("user", "book")
+    ordering = ("-created_at",)
+    list_per_page = 15
+    fieldsets = (
+        (
+            "General",
+            {
+                "fields": (
+                    "user",
+                    "book",
+                )
             },
         ),
     )

@@ -33,3 +33,17 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         verbose_name = "User"
         verbose_name_plural = "Users"
         ordering = ("-created_at",)
+
+
+class Favorite(BaseModel):
+    user = models.ForeignKey("user.User", on_delete=models.CASCADE, related_name="favorites", verbose_name="User")
+    book = models.ForeignKey("catalog.Book", on_delete=models.CASCADE, related_name="favorites", verbose_name="Book")
+
+    def __str__(self):
+        return f"{self.user} - {self.book}"
+
+    class Meta:
+        db_table = "users__favorites"
+        verbose_name = "Favorite"
+        verbose_name_plural = "Favorites"
+        ordering = ("-created_at",)
