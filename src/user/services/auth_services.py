@@ -1,16 +1,28 @@
+import jwt
+from datetime import datetime, timedelta
+
 from typing import Union
 from django.db import transaction
+from django.urls import reverse
+from django.conf import settings
 
-from common.exceptions import UserAlreadyExistException, SomethingGetWrongException
+from common.exceptions import (
+    UserAlreadyExistException,
+    SomethingGetWrongException,
+    TokenExpiredException,
+    ObjectNotFoundException,
+)
 from common.validators.password_validators import validate_user_password
 from user.models import User
+from user.services.token_services import JWTTokenService
+from user.services.email_services import EmailService
 
 
 class AuthService(object):
     __user_model = User
 
     @classmethod
-    def signup(cls, email: str, password: str, confirm_password: str, **kwargs) -> Union[dict, None]:
+    def signup(cls, email: str, password: str, confirm_password: str, request, **kwargs) -> Union[dict, None]:
         """
         User sign up
         :args
@@ -35,8 +47,59 @@ class AuthService(object):
                     exist_user.set_password(verified_password)
                     exist_user.save()
                 else:
-                    cls.__user_model.objects.create_user(email=email, password=verified_password, **kwargs)
+                    user = cls.__user_model.objects.create_user(email=email, password=verified_password, **kwargs)
+
+                EmailService.send_email(
+                    email=email,
+                    verifcation_link=cls.get_verification_link(user, request=request),
+                )
                 response: dict = {"message": "User successfully signed up, please verify your email"}
                 return response
         except Exception:
             raise SomethingGetWrongException({"message": "Something get wrong"})
+
+    @staticmethod
+    def get_verification_link(user, request) -> str:
+        """
+        Get verification link
+        :args user: user instance
+        :returns str: verification link
+        """
+        token_payload = {"email": user.email, "exp": datetime.utcnow() + timedelta(days=1)}
+        jwt_token = jwt.encode(token_payload, settings.SECRET_KEY, algorithm="HS256")
+
+        base_url = request.build_absolute_uri("/")[:-1]
+        confirmation_url = base_url + reverse("user-verify")
+        confirmation_url += f"?token={jwt_token}"
+        return confirmation_url
+
+    @classmethod
+    def verify_email_user(cls, token) -> dict:
+        """
+        Verify email user
+        :args
+            token (str): _token_
+        :raises
+            TokenExpiredException: _return statusCode about token expired_
+            ObjectNotFoundException: _return statusCode about user not found_
+        :returns
+            dict: _return message about user succesfully verified,
+            and need to verify it or None what means exceptions object_
+        """
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            raise TokenExpiredException({"message": "Token expired"})
+        except jwt.DecodeError:
+            return None
+        email = payload.get("email")
+
+        try:
+            user = cls.__user_model.objects.get(email=email)
+        except User.DoesNotExist:
+            raise ObjectNotFoundException({"message": "User not found"})
+
+        user.verified = True
+        user.save()
+
+        return JWTTokenService.generate_token(email=user.email)

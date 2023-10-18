@@ -26,3 +26,4 @@ gunicorn==21.2.0
 
 #auth
 djangorestframework-simplejwt==5.3.0
+PyJWT==2.8.0

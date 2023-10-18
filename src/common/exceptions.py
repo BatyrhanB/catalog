@@ -35,3 +35,7 @@ class IncorrectPasswordException(APIException):
 
 class UserAlreadyExistException(APIException):
     status_code = 400
+
+
+class TokenExpiredException(APIException):
+    status_code = 400
