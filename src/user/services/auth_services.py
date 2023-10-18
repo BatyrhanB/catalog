@@ -5,6 +5,7 @@ from typing import Union
 from django.db import transaction
 from django.urls import reverse
 from django.conf import settings
+from django.contrib.auth import authenticate
 
 from common.exceptions import (
     UserAlreadyExistException,
@@ -103,3 +104,24 @@ class AuthService(object):
         user.save()
 
         return JWTTokenService.generate_token(email=user.email)
+
+    @classmethod
+    def sign_in(cls, email: str, password: str):
+        """
+        Sign in user
+        :args
+            email (str): _user's email_
+            password (str): _user's password_
+        :raises
+            ObjectNotFoundException: _return statusCode about user not found_
+        :returns
+            dict: _return message about user succesfully signed in,
+            and need to verify it or None what means exceptions object_
+        """
+        user = authenticate(email=email, password=password)
+        if user:
+            return JWTTokenService.generate_token(email=user.email)
+        else:
+            raise ObjectNotFoundException(
+                "User not found or not active or data is not valid"
+            )
